@@ -45,8 +45,13 @@ def main():
         ds = load_dataset("json", data_files=args.data_files)
     elif all(file.endswith(".jsonl") for file in args.data_files):
         ds = load_dataset("json", data_files=args.data_files)
-    else:
+    elif all(file.endswith(".parquet") for file in args.data_files):
         ds = load_dataset("parquet", data_files=args.data_files)
+    else:
+        raise NotImplementedError(
+            f"The folder {args.data_files=} contains files of unsupported extensions. "
+            "All file should have one of these extensions {`.json`, `.jsonl`, or `.parquet`}"
+        )
     url = ds.push_to_hub(args.hub_repo_id, config_name=args.config_name, private=True)
     print(f"Dataset available at: {url}")
 

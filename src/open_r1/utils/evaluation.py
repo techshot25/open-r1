@@ -51,7 +51,7 @@ register_lighteval_task(LIGHTEVAL_TASKS, "custom", "aime24", "aime24", 0)
 
 
 def get_lighteval_tasks():
-    return list(LIGHTEVAL_TASKS.keys())
+    return LIGHTEVAL_TASKS.keys()
 
 
 SUPPORTED_BENCHMARKS = get_lighteval_tasks()

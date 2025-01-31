@@ -49,8 +49,8 @@ def push_to_hub_revision(training_args: SFTConfig | GRPOConfig, extra_ignore_pat
         revision=initial_commit.commit_id,
         exist_ok=True,
     )
-    logger.info(f"Created target repo at {repo_url}")
-    logger.info(f"Pushing to the Hub revision {training_args.hub_model_revision}...")
+    logger.info("Created target repo at %s", repo_url)
+    logger.info("Pushing to the Hub revision %s", training_args.hub_model_revision)
     ignore_patterns = ["checkpoint-*", "*.pth"]
     ignore_patterns.extend(extra_ignore_patterns)
     upload_folder(
@@ -60,7 +60,7 @@ def push_to_hub_revision(training_args: SFTConfig | GRPOConfig, extra_ignore_pat
         commit_message=f"Add {training_args.hub_model_revision} checkpoint",
         ignore_patterns=ignore_patterns,
     )
-    logger.info(f"Pushed to {repo_url} revision {training_args.hub_model_revision} successfully!")
+    logger.info("Pushed to %s revision %s successfully!", repo_url, training_args.hub_model_revision)
 
     return True
 
@@ -70,7 +70,7 @@ def check_hub_revision_exists(training_args: SFTConfig | GRPOConfig):
     if repo_exists(training_args.hub_model_id):
         if training_args.push_to_hub_revision is True:
             # First check if the revision exists
-            revisions = [rev.name for rev in list_repo_refs(training_args.hub_model_id).branches]
+            revisions = frozenset(rev.name for rev in list_repo_refs(training_args.hub_model_id).branches)
             # If the revision exists, we next check it has a README file
             if training_args.hub_model_revision in revisions:
                 repo_files = list_repo_files(
@@ -90,8 +90,8 @@ def get_param_count_from_repo_id(repo_id: str) -> int:
         return list(metadata.parameter_count.values())[0]
     except Exception:
         # Pattern to match products (like 8x7b) and single values (like 42m)
-        pattern = r"((\d+(\.\d+)?)(x(\d+(\.\d+)?))?)([bm])"
-        matches = re.findall(pattern, repo_id.lower())
+        pattern = re.compile(r"((\d+(\.\d+)?)(x(\d+(\.\d+)?))?)([bm])", flags=re.IGNORECASE)
+        matches = pattern.findall(repo_id)
 
         param_counts = []
         for full_match, number1, _, _, number2, _, unit in matches:
@@ -101,9 +101,9 @@ def get_param_count_from_repo_id(repo_id: str) -> int:
                 number = float(number1)
 
             if unit == "b":
-                number *= 1_000_000_000  # Convert to billion
+                number *= 1e9  # Convert to billion
             elif unit == "m":
-                number *= 1_000_000  # Convert to million
+                number *= 1e6  # Convert to million
 
             param_counts.append(number)
 
@@ -124,6 +124,6 @@ def get_gpu_count_for_vllm(model_name: str, revision: str = "main", num_gpus: in
     num_heads = config.num_attention_heads
     # Reduce num_gpus so that num_heads is divisible by num_gpus and 64 is divisible by num_gpus
     while num_heads % num_gpus != 0 or 64 % num_gpus != 0:
-        logger.info(f"Reducing num_gpus from {num_gpus} to {num_gpus - 1} to make num_heads divisible by num_gpus")
+        logger.info("Reducing num_gpus from %i to %i to make num_heads divisible by num_gpus", num_gpus, num_gpus - 1)
         num_gpus -= 1
     return num_gpus
